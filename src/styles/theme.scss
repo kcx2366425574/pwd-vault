@@ -1,0 +1,41 @@
+/**
+ * 主题变量与深浅色映射（供需要 scss 变量的组件按需 import）。
+ * uni.scss 已全局注入基础变量，本文件提供语义化映射与 mixin。
+ */
+@import '../uni.scss';
+
+/// 浅色语义变量
+$theme-bg: $pv-bg;
+$theme-card: $pv-bg-card;
+$theme-text: $pv-text;
+$theme-text-secondary: $pv-text-secondary;
+$theme-border: $pv-border;
+$theme-primary: $pv-primary;
+
+/// 卡片统一样式 mixin
+@mixin pv-card($bg: $theme-card) {
+  background-color: $bg;
+  border-radius: $pv-radius-md;
+  padding: $pv-space-md;
+  margin-bottom: $pv-space-sm;
+  box-shadow: 0 2rpx 12rpx rgba(31, 35, 41, 0.05);
+}
+
+/// 主按钮统一样式 mixin
+@mixin pv-button-primary {
+  background-color: $pv-primary;
+  color: #FFFFFF;
+  border-radius: $pv-radius-sm;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+/// 单行省略 mixin
+@mixin pv-ellipsis {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

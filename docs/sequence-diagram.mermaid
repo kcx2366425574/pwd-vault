@@ -1,0 +1,119 @@
+%% 个人密码管理器 — 关键程序调用流程（4 个时序图）
+%% 图1：首次设置主密码
+sequenceDiagram
+    participant U as 用户
+    participant P as setup.vue
+    participant A as AuthService
+    participant B as CsprngAdapter
+    participant C as CryptoAdapter
+    participant S as VaultService
+    participant ST as StorageAdapter
+    U->>P: 输入主密码 + 确认 + 勾选警示
+    P->>P: validator 校验强度
+    P->>A: setupMasterPassword(pwd)
+    A->>B: selfCheck()
+    B-->>A: true（否则拒绝）
+    A->>C: createCheckBlock(pwd)
+    C->>B: randomB64(16) 生成 salt/iv
+    C->>C: PBKDF2 派生 masterKey→encKey/macKey 加密挑战串
+    C-->>A: check=PV1...
+    A->>C: deriveMasterKey(pwd, salt, iter)
+    C-->>A: masterKey
+    A->>SessionGuard: unlock(masterKey)
+    A->>S: 初始化空 vault(check,kdf,meta)
+    S->>ST: writeVault(vault)
+    ST-->>S: 写入成功
+    A-->>P: 设置成功
+    P->>U: 跳转密码库主页
+
+%% ---------------------------------------------------------------
+%% 图2：解锁（主密码 / 生物识别）
+sequenceDiagram
+    participant U as 用户
+    participant P as index.vue
+    participant A as AuthService
+    participant C as CryptoAdapter
+    participant BIO as BiometricAdapter
+    participant S as VaultService
+    participant LM as LockManager
+    U->>P: 输入主密码 / 点击生物识别
+    alt 生物识别解锁
+        P->>BIO: authenticate(challenge)
+        BIO-->>P: success
+        P->>A: unlockByBiometric()
+        A->>S: 读取生物保护的主密钥封装（本地）
+    else 主密码解锁
+        P->>A: unlock(pwd)
+        A->>S: readVault() 取 check/kdf
+        A->>C: verifyAndDerive(pwd, check)
+        C-->>A: masterKey 或抛 E_CRYPTO_AUTH
+    end
+    alt 认证成功
+        A->>SessionGuard: unlock(masterKey)
+        A->>S: load()→decryptAll() 明文入内存 Vuex
+        S-->>P: 条目列表
+        P->>LM: startTimer(自动锁定时长)
+        P->>U: 进入密码库主页
+    else 认证失败
+        A->>A: 错误计数 +1，触发指数退避(30s→1min→5min)
+        A-->>P: 返回剩余等待秒数
+        P->>U: 显示错误与倒计时
+    end
+
+%% ---------------------------------------------------------------
+%% 图3：新增条目
+sequenceDiagram
+    participant U as 用户
+    participant P as detail.vue
+    participant E as EntryService
+    participant G as GeneratorService
+    participant V as VaultService
+    participant C as CryptoAdapter
+    participant SG as SessionGuard
+    participant ST as StorageAdapter
+    U->>P: 填写网站/账号/密码等
+    opt 使用生成器
+        P->>G: generate(opts)
+        G->>B: CsprngAdapter.getRandomValues()
+        G-->>P: 强密码（不写日志）
+    end
+    P->>E: create(dto)
+    E->>E: validator 校验必填(网站/密码)
+    E->>V: persist 前准备
+    V->>SG: 取 subKeys
+    V->>C: encryptRecord(JSON.stringify(entry字段))
+    C-->>V: E1.<iv>.<ct>.<mac>
+    V->>V: 更新内存明文集合 + updatedAt/deviceId
+    V->>ST: writeVault(整库快照)
+    ST-->>V: 原子写入成功
+    V-->>E: 完成
+    E-->>P: 返回新条目
+    P->>U: 显示成功，返回列表
+
+%% ---------------------------------------------------------------
+%% 图4：云同步（E2EE + 冲突合并）
+sequenceDiagram
+    participant U as 用户
+    participant P as sync.vue
+    participant SS as SyncService
+    participant SP as SyncProvider
+    participant V as VaultService
+    U->>P: 点击「立即同步」
+    P->>SS: sync()
+    SS->>SP: login/getStatus（占位实现为本地）
+    SS->>SP: download(since=lastSyncAt)
+    SP-->>SS: remoteVaultCipher[]
+    SS->>V: 读取本地 vaultCipher（记录已加密）
+    SS->>SS: 按 entryId + updatedAt + deviceId 合并
+    alt 检测到双方各自修改（冲突）
+        SS->>SS: 保留双方版本（remote 生成新 id 副本）
+        SS->>V: 写入冲突条目到内存 + 落盘
+        SS-->>P: 返回 SyncConflict[] 供用户选择
+    else 无冲突
+        SS->>SP: upload(localVaultCipher, meta)
+        SP-->>SS: SyncAck(newSyncAt)
+        SS->>V: 更新 meta.lastSyncAt
+    end
+    SS-->>P: 同步结果 + 时间戳
+    P->>U: 展示状态/冲突列表
+    Note over SP: 全程只传记录级密文，服务端无密钥（E2EE）

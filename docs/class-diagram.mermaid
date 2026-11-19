@@ -1,0 +1,243 @@
+%% 个人密码管理器 — 核心类图
+%% 适配层(utils) + 服务层(services) + 数据模型
+classDiagram
+    %% ============ 数据模型 ============
+    class VaultDTO {
+        +int v
+        +KdfParams kdf
+        +string check
+        +VaultEntry[] entries
+        +Category[] categories
+        +Tag[] tags
+        +Meta meta
+    }
+    class KdfParams {
+        +int iter
+        +string saltB64
+    }
+    class VaultEntry {
+        +string id
+        +string site
+        +string account
+        +string password
+        +string url
+        +string note
+        +string categoryId
+        +string[] tagIds
+        +int createdAt
+        +int updatedAt
+        +boolean deleted
+        +int version
+        +string deviceId
+        +int usageCount
+        +int lastUsedAt
+        +int remindAt
+    }
+    class Category {
+        +string id
+        +string name
+        +boolean builtin
+        +string color
+    }
+    class Tag {
+        +string id
+        +string name
+        +string color
+    }
+    class SyncMeta {
+        +string entryId
+        +int updatedAt
+        +string deviceId
+        +boolean deleted
+        +int version
+    }
+    class SyncConflict {
+        +string entryId
+        +VaultEntry localVersion
+        +VaultEntry remoteVersion
+        +boolean resolved
+    }
+    class SubKeys {
+        +Uint8Array encKey
+        +Uint8Array macKey
+    }
+
+    %% ============ 适配层 utils/ ============
+    class CryptoAdapter {
+        +deriveMasterKey(pwd, salt, iter) Uint8Array
+        +deriveSubKeys(masterKey) SubKeys
+        +createCheckBlock(pwd) string
+        +verifyAndDerive(pwd, check) Uint8Array
+        +encryptRecord(json, subKeys) string
+        +decryptRecord(enc, subKeys) string
+        +encryptBytes(data, key) Bundle
+        +decryptBytes(bundle, key) Uint8Array
+        +wipe(key) void
+    }
+    class CsprngAdapter {
+        +getRandomValues(len) Uint8Array
+        +randomB64(len) string
+        +selfCheck() boolean
+    }
+    class StorageAdapter {
+        +readVault() VaultDTO
+        +writeVault(vault) void
+        +backupOld(vault) void
+        +exists() boolean
+        +clear() void
+    }
+    class BiometricAdapter {
+        +isSupported() Promise
+        +authenticate(opts) Promise
+        +enable(pwd) Promise
+        +disable() void
+    }
+    class AutofillBridge {
+        +isAvailable() boolean
+        +provideCredential(domain) Promise
+        +saveCredential(cred) void
+    }
+    class ClipboardService {
+        +copy(text, ttl) void
+        +clearNow() void
+    }
+    class EventBus {
+        +on(evt, fn) void
+        +off(evt, fn) void
+        +emit(evt, data) void
+    }
+    class LockManager {
+        +resetTimer() void
+        +startTimer(ms) void
+        +lockNow() void
+        +bindLifecycle() void
+    }
+    class SessionGuard {
+        -Uint8Array masterKey
+        -SubKeys subKeys
+        +unlock(key) void
+        +lock() void
+        +getSubKeys() SubKeys
+        +isUnlocked() boolean
+    }
+
+    %% ============ 同步接口与实现 providers/ ============
+    class SyncProvider {
+        <<interface>>
+        +login(acc, cred) Promise~SyncUser~
+        +logout() void
+        +upload(cipher, meta) Promise~SyncAck~
+        +download(since) Promise
+        +getStatus() SyncStatus
+    }
+    class LocalFileSyncProvider {
+        +login(acc, cred) Promise
+        +upload(cipher, meta) Promise
+        +download(since) Promise
+        +getStatus() SyncStatus
+    }
+
+    %% ============ 服务层 services/ ============
+    class AuthService {
+        +setupMasterPassword(pwd) void
+        +unlock(pwd) boolean
+        +unlockByBiometric() boolean
+        +changeMasterPassword(old, new) void
+        +lock() void
+        +isUnlocked() boolean
+    }
+    class VaultService {
+        +load() void
+        +persist() void
+        +decryptAll() VaultEntry[]
+        +getEntry(id) VaultEntry
+    }
+    class EntryService {
+        +create(dto) VaultEntry
+        +update(id, dto) void
+        +remove(id) void
+        +search(kw) VaultEntry[]
+        +filter(f) VaultEntry[]
+    }
+    class CategoryService {
+        +list() Category[]
+        +add(name) Category
+        +rename(id, name) void
+        +remove(id) void
+    }
+    class TagService {
+        +list() Tag[]
+        +add(name, color) Tag
+        +rename(id, name) void
+        +remove(id) void
+    }
+    class GeneratorService {
+        +generate(opts) string
+    }
+    class HealthService {
+        +audit(entries) HealthReport
+    }
+    class SyncService {
+        +sync() void
+        +merge(local, remote) SyncConflict[]
+        +resolve(conflict, choice) void
+    }
+    class BackupService {
+        +exportEncrypted(pwd) string
+        +importEncrypted(file, pwd) void
+    }
+    class ReminderService {
+        +checkDue() VaultEntry[]
+    }
+    class UsageService {
+        +recordView(id) void
+        +recordEdit(id) void
+    }
+
+    %% ============ 关系 ============
+    VaultDTO "1" *-- "1" KdfParams
+    VaultDTO "1" *-- "0..*" VaultEntry
+    VaultDTO "1" *-- "0..*" Category
+    VaultDTO "1" *-- "0..*" Tag
+    VaultDTO "1" *-- "1" Meta
+    SyncConflict "1" *-- "2" VaultEntry
+
+    CryptoAdapter ..> SubKeys : 派生
+    CsprngAdapter <.. CryptoAdapter : 随机盐/IV/UUID
+    CryptoAdapter <.. SessionGuard : 派生密钥注入
+    SessionGuard "1" o-- "1" SubKeys
+
+    StorageAdapter <.. VaultService : 原子读写
+    SessionGuard <.. AuthService : 托管/清理密钥
+    AuthService --> VaultService : 解锁后装载
+    AuthService --> BiometricAdapter : 生物解锁
+    AuthService --> LockManager : 触发锁定
+    AuthService --> EventBus : auth:locked/unlocked
+
+    VaultService --> SessionGuard : 取 subKeys
+    VaultService --> CryptoAdapter : 记录加解密
+    VaultService --> EntryService : 提供明文集合
+    VaultService ..> VaultDTO : 读写
+
+    EntryService --> ClipboardService : 复制密码
+    EntryService --> EventBus : vault:changed
+    EntryService --> UsageService : 使用记录
+    GeneratorService --> CsprngAdapter : 安全随机（禁 Math.random）
+    CategoryService --> VaultService
+    TagService --> VaultService
+    HealthService --> EntryService : 读取条目审计
+
+    SyncProvider <|.. LocalFileSyncProvider : 实现
+    SyncService --> SyncProvider : 依赖接口（可替换远端）
+    SyncService --> VaultService : 读写密文
+    SyncService --> CryptoAdapter : E2EE封装
+    SyncService --> EventBus : sync:status
+
+    AutofillBridge --> EntryService : 查询匹配凭证
+    AutofillBridge --> ClipboardService : 降级手动填充
+    BackupService --> CryptoAdapter : 加密导出/导入
+    BackupService --> VaultService
+    ReminderService --> EntryService
+    LockManager --> SessionGuard : 触发 wipe
+    LockManager --> ClipboardService : 立即清空
+    LockManager --> EventBus : auth:locked

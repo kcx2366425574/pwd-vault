@@ -1,0 +1,18 @@
+node_modules/
+dist/*
+!dist/release/
+dist/release/*
+!dist/release/apk/
+dist/release/apk/*
+!dist/release/apk/*.apk
+unpackage/*
+!unpackage/res/
+.hbuilderx/launch.json
+*.log
+.DS_Store
+
+# 本地签名证书等私密文件不提交
+*.keystore
+*.jks
+*.p12
+

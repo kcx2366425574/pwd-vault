@@ -1,0 +1,125 @@
+/* 全局主题样式：浅色为默认，.theme-dark 由 App.vue 动态挂载 */
+
+page {
+  background-color: #F5F6FA;
+  color: #1F2329;
+  font-size: 28rpx;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  line-height: 1.6;
+}
+
+view, text, input, textarea, button {
+  box-sizing: border-box;
+}
+
+.pv-page {
+  min-height: 100vh;
+  padding: 24rpx;
+  background-color: #F5F6FA;
+}
+
+.pv-card {
+  background-color: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 12rpx rgba(31, 35, 41, 0.05);
+}
+
+.pv-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #1F2329;
+}
+
+.pv-subtitle {
+  font-size: 24rpx;
+  color: #909399;
+}
+
+.pv-primary-btn {
+  background-color: #3A6FF8;
+  color: #FFFFFF;
+  border-radius: 12rpx;
+  height: 88rpx;
+  line-height: 88rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.pv-primary-btn.pv-disabled {
+  background-color: #C0C4CC;
+}
+
+.pv-danger-btn {
+  background-color: #E54545;
+  color: #FFFFFF;
+  border-radius: 12rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  text-align: center;
+  font-size: 28rpx;
+}
+
+.pv-input {
+  width: 100%;
+  height: 88rpx;
+  padding: 0 24rpx;
+  background-color: #FFFFFF;
+  border: 2rpx solid #E4E7ED;
+  border-radius: 12rpx;
+  font-size: 28rpx;
+  color: #1F2329;
+}
+
+.pv-input-focus {
+  border-color: #3A6FF8;
+}
+
+.pv-divider {
+  height: 2rpx;
+  background-color: #E4E7ED;
+  margin: 24rpx 0;
+}
+
+.pv-warning-box {
+  background-color: #FDF6EC;
+  border: 2rpx solid #F5DAB1;
+  border-radius: 12rpx;
+  padding: 20rpx;
+  color: #A66A1A;
+  font-size: 24rpx;
+}
+
+/* 深色主题覆盖 */
+.theme-dark page,
+.theme-dark .pv-page {
+  background-color: #12141A;
+  color: #E5E6EB;
+}
+
+.theme-dark .pv-card,
+.theme-dark .pv-input {
+  background-color: #1E212B;
+  border-color: #333745;
+  color: #E5E6EB;
+}
+
+.theme-dark .pv-title {
+  color: #E5E6EB;
+}
+
+.theme-dark .pv-subtitle {
+  color: #A6A9B3;
+}
+
+.theme-dark .pv-divider {
+  background-color: #333745;
+}
+
+.theme-dark .pv-warning-box {
+  background-color: #3A2E1A;
+  border-color: #6B5324;
+  color: #E6C07B;
+}

@@ -1,0 +1,7 @@
+{
+  "slug": "pwd",
+  "android": {
+    "packagename": "com.pwdvault.app",
+    "androidpacktype": "3"
+  }
+}

@@ -1,0 +1,46 @@
+/**
+ * 全局主题变量（uni.scss）。
+ * 由 uni-app 注入到所有 .vue 的 <style lang="scss"> 中，无需重复 import。
+ */
+
+/* 品牌色 */
+$pv-primary: #3A6FF8;
+$pv-primary-dark: #2A56C8;
+$pv-primary-light: #E8F0FF;
+$pv-accent: #00B894;
+$pv-danger: #E54545;
+$pv-warning: #E6A23C;
+
+/* 中性色 */
+$pv-text: #1F2329;
+$pv-text-secondary: #606266;
+$pv-text-placeholder: #A8ABB2;
+$pv-border: #E4E7ED;
+$pv-bg: #F5F6FA;
+$pv-bg-card: #FFFFFF;
+
+/* 深色主题 */
+$pv-dark-bg: #12141A;
+$pv-dark-card: #1E212B;
+$pv-dark-text: #E5E6EB;
+$pv-dark-text-secondary: #A6A9B3;
+$pv-dark-border: #333745;
+
+/* 间距与圆角 */
+$pv-space-xs: 8rpx;
+$pv-space-sm: 16rpx;
+$pv-space-md: 24rpx;
+$pv-space-lg: 32rpx;
+$pv-space-xl: 48rpx;
+$pv-radius-sm: 8rpx;
+$pv-radius-md: 16rpx;
+$pv-radius-lg: 24rpx;
+
+/* 字体 */
+$pv-font-sm: 24rpx;
+$pv-font-md: 28rpx;
+$pv-font-lg: 32rpx;
+$pv-font-xl: 40rpx;
+
+/* 安全区 */
+$pv-safe-bottom: env(safe-area-inset-bottom);

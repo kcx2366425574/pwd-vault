@@ -14,6 +14,38 @@ const BASE64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz012
  * 探测平台可用的密码学随机源。
  * @returns {Object|null} 具备 getRandomValues 的对象
  */
+// App 端基于 Android 原生 java.security.SecureRandom 的随机源适配器。
+// uni-app App 端的 JS 引擎没有 Web Crypto，plus.crypto 也不存在（真机实测），
+// 因此必须用 plus.android 调原生 SecureRandom，绝不能降级到 Math.random()。
+let nativeSecureRandomAdapter = null
+function buildNativeSecureRandom() {
+  // #ifdef APP-PLUS
+  try {
+    if (typeof plus === 'undefined' || !plus.android || typeof plus.android.importClass !== 'function') return null
+    const SecureRandom = plus.android.importClass('java.security.SecureRandom')
+    if (!SecureRandom) return null
+    const instance = new SecureRandom()
+    plus.android.importClass(instance)
+    if (typeof instance.nextBytes !== 'function') return null
+    return {
+      getRandomValues: function (arr) {
+        // 注意：plus.android 桥接下 nextBytes(byte[]) 对 JS Uint8Array 是值传递，
+        // 原生写入不会回写到 JS 数组（真机实测全 0）。改用 nextInt(256) 逐字节
+        // 填充——通过方法返回值传递，绕开数组回写限制。
+        for (let i = 0; i < arr.length; i++) {
+          arr[i] = instance.nextInt(256) & 0xff
+        }
+        return arr
+      }
+    }
+  } catch (e) {
+    logger.error(ERROR_CODES.CSPRNG_UNAVAILABLE, 'CSPRNG')
+    return null
+  }
+  // #endif
+  return null
+}
+
 function resolveCryptoSource() {
   if (typeof globalThis !== 'undefined' && globalThis.crypto && typeof globalThis.crypto.getRandomValues === 'function') {
     return globalThis.crypto
@@ -29,6 +61,8 @@ function resolveCryptoSource() {
   } catch (e) {
     logger.error(ERROR_CODES.CSPRNG_UNAVAILABLE, 'CSPRNG')
   }
+  if (!nativeSecureRandomAdapter) nativeSecureRandomAdapter = buildNativeSecureRandom()
+  if (nativeSecureRandomAdapter) return nativeSecureRandomAdapter
   // #endif
   return null
 }

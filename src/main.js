@@ -3,7 +3,7 @@
  * 无第三方 npm 依赖；CryptoJS 由各适配层按需 import 本地单文件。
  *
  * Vue 3 约定：不再使用 new Vue() / Vue.prototype，
- * 改用 createSSRApp + createApp() 导出，全局属性挂到 app.config.globalProperties。
+ * 改用 SSR App 工厂 + createApp() 导出，全局属性挂到 app.config.globalProperties。
  */
 import { createSSRApp } from 'vue'
 import App from './App'

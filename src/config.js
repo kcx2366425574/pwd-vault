@@ -8,8 +8,8 @@
  */
 export const APP_META = {
   name: '密码保险箱',
-  versionName: '1.0.0',
-  versionCode: 100,
+  versionName: '1.0.1',
+  versionCode: 101,
   slogan: '本地优先 · 端到端加密',
   update: {
     provider: 'github',

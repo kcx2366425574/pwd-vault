@@ -2,8 +2,8 @@
     "name" : "密码保险箱",
     "appid" : "__UNI__0CC0DE4",
     "description" : "本地优先、端到端加密的个人密码管理器",
-    "versionName" : "1.0.0",
-    "versionCode" : "100",
+    "versionName" : "1.0.1",
+    "versionCode" : "101",
     "transformPx" : false,
     "vueVersion" : "3",
     "app-plus" : {
